@@ -4,7 +4,7 @@
   Plugin URI: http://thinkmerlin.com
   Description: Code for extending AppPush functionality
   Version: 0.2
-  Author: Alex Keyes <
+  Author: Alex Keyes <alex@thinkmerlin.com>
   Author URI: http://thinkmerlin.com
   License: GPLv2
 */
@@ -58,12 +58,10 @@ add_filter( 'send_push_post_content', 'send_custom_push', 10, 3 );
 //add_action( 'save_post', 'push_to_devices', 999 );
 
 function push_to_devices() {
-	
-	// this should be an array of user IDs that you want to send the pushes too. AppPresser saves device IDs if the app user is a logged in member of your WordPress site, for example in BuddyPress. This will not work unless the user has logged in through your app.
+	// this should be an array of user IDs that you want to send the pushes too. AppPresser saves device IDs if the app user is a
+    // logged in member of your WordPress site, for example in BuddyPress. This will not work unless the user has logged in through your app.
 	$recipients = array( 1, 24 );
-	
 	$message = 'Hi there!';
-	
 	$push = new AppPresser_Notifications_Update;
 	$devices = $push->get_devices_by_user_id( $recipients );
 
@@ -82,7 +80,7 @@ function push_to_subscribers_hooks() {
 	$post_type = 'product';
 
 	add_action( "publish_$post_type", 'push_new_product_to_subscribers', 10, 2 );
-	add_action( "publish_future_$post_type", 'push_new_product_to_subscribers' );	
+	add_action( "publish_future_$post_type", 'push_new_product_to_subscribers' );
 }
 
 /**
