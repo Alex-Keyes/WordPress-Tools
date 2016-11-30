@@ -24,38 +24,50 @@ function appp_custom_scripts() {
 }
 
 /*
+ * Custom push notifications - sends notification when triggered
+ */
+function send_custom_push_notification( $id, $comment ) {
+    $msg = 'Custom Push Notificaton was triggered';
+    if( function_exists('apppush_send_notification') ) { // check to see if apppush is installed
+        apppush_send_notification( $msg );              // make a call to apppush
+    }
+}
+
+/*
  * Custom push notifications - example of sending notification when comment is posted.
  * Requires paid Pushwoosh account, with API key added in AppPresser settings
  * Docs: http://apppresser.com/docs/extensions/apppush/#mcb_toc_head13
  */
-function send_custom_push_notification( $id, $comment ) {
-    $data = $comment->comment_content;
-    if( function_exists('apppush_send_notification') ) {
-        apppush_send_notification( $data );
+function send_buddypress_push_notification( $args ) {
+    $data = 'Comment: '. $args['component'] . $args['primary_link']; // display comment location
+    if( function_exists('apppush_send_notification') ) { // check to see if apppush is installed
+        apppush_send_notification( $data );              // make a call to apppush
     }
 }
-// Send pushes when comments posted
-add_action( 'wp_insert_comment', 'send_custom_push_notification', 10, 2 );
+
+// Send pushes when triggered
+//add_action( 'wp_insert_comment', 'send_custom_push_notification', 10, 2 ); // Send a push when a comment happens
+add_action( 'user_register', 'send_custom_push_notification', 10, 2 ); // Send a push when a user is created
+add_action( 'bp_activity_add', 'send_buddypress_push_notification', 10, 2 ); // Send a push when someone posts in a buddypress group
 
 /*
  * Filter push notifications. Overrides entire message when push sent through WordPress. Does not affect pushes through PushWoosh.
  * Docs: http://apppresser.com/docs/extensions/apppush/#mcb_toc_head11
- */
- 
+ *
 function send_custom_push( $message, $post_id, $post ) {
     return $message = 'Generic Filtered Push Notification';
 
 }
 // Uncomment this line to filter pushes
 add_filter( 'send_push_post_content', 'send_custom_push', 10, 3 );
-
+*/
 /*
  * Send notifications only to certain devices
  * http://apppresser.com/docs/extensions/apppush/#mcb_toc_head14
  */
 
 // Change this hook and uncomment
-//add_action( 'save_post', 'push_to_devices', 999 );
+add_action( 'wp_insert_comment', 'push_to_devices', 999 );
 
 function push_to_devices() {
 	// this should be an array of user IDs that you want to send the pushes too. AppPresser saves device IDs if the app user is a
@@ -85,7 +97,7 @@ function push_to_subscribers_hooks() {
 
 /**
  * This will ignore the preferences and always send a notification, but you supply both
- * the taxonomy and term. 
+ * the taxonomy and term.
  * The user must be subscribed to that category to receive the notification.
  */
 function push_new_product_to_subscribers( $post_id, $post = '' ) {
