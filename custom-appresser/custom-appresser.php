@@ -1,29 +1,18 @@
 <?php
 /*
-Plugin Name: AppPresser Custom Stuff
+Plugin Name: AppPresser Custom Push Notifications
 Plugin URI: http://apppresser.com
-Description: Sample code for extending AppPresser functionality
-Version: 0.1
-Author: AppPresser Team
-Author URI: http://apppresser.com
+Description: Code for extending AppPresser functionality
+Version: 1.0.0
+Author: Alex Keyes
+Author URI: http://thinkmerlin.com
 License: GPLv2
 */
 
 /*
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-*/
+ * This is a fork of the original AppPresser custom code, you can find it at
+ * http://docs.apppresser.com/article/219-custom-push-notifications-tutorial
+ */
 
 if ( !class_exists( 'AppPresser' ) )
 	return;
@@ -40,32 +29,27 @@ function appp_custom_scripts() {
 }
 
 /*
- * Custom push notifications - example of sending notification when comment is posted.
+ * Custom push notifications - example of sends notification when comment is posted.
  * Requires paid Pushwoosh account, with API key added in AppPresser settings
  * Docs: http://apppresser.com/docs/extensions/apppush/#mcb_toc_head13
  */
- 
 function send_custom_push_notification( $id, $comment ) {
-	
 	if( function_exists('apppush_send_notification') )
 		return;
-	
-	$data = $comment->comment_content;
-	
-	apppush_send_notification( $data );
-    
+
+    $data = $comment->comment_content;
+
+    apppush_send_notification( $data );
 }
 
 // Uncomment this line to send pushes when comments posted
-add_action( 'wp_insert_comment', 'send_custom_push_notification', 10, 2 );
+//add_action( 'wp_insert_comment', 'send_custom_push_notification', 10, 2 );
 
 /*
  * Filter push notifications. Overrides entire message when push sent through WordPress. Does not affect pushes through PushWoosh.
  * Docs: http://apppresser.com/docs/extensions/apppush/#mcb_toc_head11
  */
- 
 function send_custom_push( $message, $post_id, $post ) {
-	
     if( 'apppush' === $post->post_type ) {
 	    $message = 'My custom title';
     }
@@ -78,7 +62,7 @@ function send_custom_push( $message, $post_id, $post ) {
 
 
 /**
- * Send notifications
+ * Send notifications to a buddypress group
  */
 function push_to_group( $args ) {
 
