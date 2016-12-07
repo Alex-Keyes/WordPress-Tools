@@ -1,12 +1,28 @@
 <?php
 /*
-  Plugin Name: AppPresser Custom Push Notifications
-  Plugin URI: http://thinkmerlin.com
-  Description: Code for extending AppPush functionality
-  Version: 0.2
-  Author: Alex Keyes <alex@thinkmerlin.com>
-  Author URI: http://thinkmerlin.com
-  License: GPLv2
+Plugin Name: AppPresser Custom Stuff
+Plugin URI: http://apppresser.com
+Description: Sample code for extending AppPresser functionality
+Version: 0.1
+Author: AppPresser Team
+Author URI: http://apppresser.com
+License: GPLv2
+*/
+
+/*
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 if ( !class_exists( 'AppPresser' ) )
@@ -24,63 +40,83 @@ function appp_custom_scripts() {
 }
 
 /*
- * Custom push notifications - sends notification when triggered
- */
-function send_custom_push_notification( $id, $comment ) {
-    $msg = 'Custom Push Notificaton was triggered';
-    if( function_exists('apppush_send_notification') ) { // check to see if apppush is installed
-        apppush_send_notification( $msg );              // make a call to apppush
-    }
-}
-
-/*
  * Custom push notifications - example of sending notification when comment is posted.
  * Requires paid Pushwoosh account, with API key added in AppPresser settings
  * Docs: http://apppresser.com/docs/extensions/apppush/#mcb_toc_head13
  */
-function send_buddypress_push_notification( $args ) {
-    $data = 'Comment: '. $args['component'] . $args['primary_link']; // display comment location
-    if( function_exists('apppush_send_notification') ) { // check to see if apppush is installed
-        apppush_send_notification( $data );              // make a call to apppush
-    }
+ 
+function send_custom_push_notification( $id, $comment ) {
+	
+	if( function_exists('apppush_send_notification') )
+		return;
+	
+	$data = $comment->comment_content;
+	
+	apppush_send_notification( $data );
+    
 }
 
-// Send pushes when triggered
-//add_action( 'wp_insert_comment', 'send_custom_push_notification', 10, 2 ); // Send a push when a comment happens
-add_action( 'user_register', 'send_custom_push_notification', 10, 2 ); // Send a push when a user is created
-add_action( 'bp_activity_add', 'send_buddypress_push_notification', 10, 2 ); // Send a push when someone posts in a buddypress group
+// Uncomment this line to send pushes when comments posted
+add_action( 'wp_insert_comment', 'send_custom_push_notification', 10, 2 );
 
 /*
  * Filter push notifications. Overrides entire message when push sent through WordPress. Does not affect pushes through PushWoosh.
  * Docs: http://apppresser.com/docs/extensions/apppush/#mcb_toc_head11
- *
+ */
+ 
 function send_custom_push( $message, $post_id, $post ) {
-    return $message = 'Generic Filtered Push Notification';
+	
+    if( 'apppush' === $post->post_type ) {
+	    $message = 'My custom title';
+    }
+
+    return $message;
 
 }
 // Uncomment this line to filter pushes
-add_filter( 'send_push_post_content', 'send_custom_push', 10, 3 );
-*/
-/*
- * Send notifications only to certain devices
- * http://apppresser.com/docs/extensions/apppush/#mcb_toc_head14
+//add_filter( 'send_push_post_content', 'send_custom_push', 10, 3 );
+
+
+/**
+ * Send notifications
  */
+function push_to_group( $args ) {
 
-// Change this hook and uncomment
-add_action( 'wp_insert_comment', 'push_to_devices', 999 );
+    // Don't do anything if this is not a group activity item.
+    if ( 'groups' !== $args['component'] ) {
+        return;
+    }
 
-function push_to_devices() {
-	// this should be an array of user IDs that you want to send the pushes too. AppPresser saves device IDs if the app user is a
-    // logged in member of your WordPress site, for example in BuddyPress. This will not work unless the user has logged in through your app.
-	$recipients = array( 1, 24 );
-	$message = 'Hi there!';
-	$push = new AppPresser_Notifications_Update;
+    // The group id is 'item_id' in the argument array.
+    $group_id = $args['item_id'];
+    $group_member_query = new BP_Group_Member_Query( array(
+        'group_id' => $group_id,
+        'group_role' => array( 'member', 'mod', 'admin' ),
+    ) );
+    $group_members = $group_member_query->results;
+    // User IDs are the keys in the $group_members array.
+    $recipients = array_keys( $group_members );
+
+    /* output different messages based on type */
+    if($args['type'] == 'joined_group'){
+        $message = get_userdata($args['user_id'])->first_name
+                 . ' joined your project: '
+                 . groups_get_group($args['item_id'])->name;
+    }
+    else {
+        $message = get_userdata($args['user_id'])->first_name
+                 . ' posted in your project: '
+                 . groups_get_group($args['item_id'])->name;
+    }
+
+    $push = new AppPresser_Notifications_Update;
 	$devices = $push->get_devices_by_user_id( $recipients );
-
 	if( $devices ) {
 		$push->notification_send( 'now', $message, 1, $devices );
 	}
 }
+
+add_action( 'bp_activity_add', 'push_to_group');
 
 /**
  * Uncomment this add_action to force notifications of new products in the coin category
@@ -92,12 +128,12 @@ function push_to_subscribers_hooks() {
 	$post_type = 'product';
 
 	add_action( "publish_$post_type", 'push_new_product_to_subscribers', 10, 2 );
-	add_action( "publish_future_$post_type", 'push_new_product_to_subscribers' );
+	add_action( "publish_future_$post_type", 'push_new_product_to_subscribers' );	
 }
 
 /**
  * This will ignore the preferences and always send a notification, but you supply both
- * the taxonomy and term.
+ * the taxonomy and term. 
  * The user must be subscribed to that category to receive the notification.
  */
 function push_new_product_to_subscribers( $post_id, $post = '' ) {
